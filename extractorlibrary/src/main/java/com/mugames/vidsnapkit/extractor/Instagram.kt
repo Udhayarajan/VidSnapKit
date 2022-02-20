@@ -23,6 +23,8 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
         const val TAG: String = Statics.tag.plus(":Instagram")
         const val STORIES_URL = "https://www.instagram.com/stories/%s/?__a=1"
         const val STORIES_API = "https://i.instagram.com/api/v1/feed/user/%s/story/"
+        const val NO_VIDEO_STATUS_AVAILABLE = "No video Status available"
+        const val NO_STATUS_AVAILABLE = "No stories Available to Download"
     }
 
     private val formats = Formats()
@@ -42,18 +44,17 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
 
     private suspend fun getUserID(): String? = cookies?.let { _ ->
         getUserName()?.let {
-            val page = HttpRequest(String.format(STORIES_URL, it)).getResponse()
+            val page = HttpRequest(String.format(STORIES_URL, it), headers).getResponse()
             try {
                 val user = JSONObject(page).getJSONObject("user")
-                user.getString("id")
+                return user.getString("id")
             } catch (e: JSONException) {
-                onProgress(Result.Failed(Error.NonFatalError("No stories Available to Download")))
-                null
+                onProgress(Result.Failed(Error.NonFatalError(NO_STATUS_AVAILABLE)))
             }
         } ?: run {
             onProgress(Result.Failed(Error.InvalidUrl))
-            null
         }
+        return null
     } ?: run {
         onProgress(Result.Failed(Error.LoginInRequired))
         null
@@ -237,6 +238,9 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
                 }
             }
         }
-        finalize()
+        if (isProfileUrl() && videoFormats.isEmpty()) {
+            onProgress(Result.Failed(Error.NonFatalError(NO_VIDEO_STATUS_AVAILABLE)))
+        } else
+            finalize()
     }
 }
