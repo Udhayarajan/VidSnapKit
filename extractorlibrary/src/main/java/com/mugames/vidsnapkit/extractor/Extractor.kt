@@ -15,18 +15,33 @@ import java.util.*
 /**
  * @author Udhaya
  * Created on 21-01-2022
+ *
+ *  This is super class of all kind of Extractor
+ *
+ *  Don't directly create instance of [Extractor]
+ *  abstract class
+ *
+ *  use [Extractor.findExtractor] to get required extractor
  */
 abstract class Extractor(
     context: Context,
-    url:String
+    url: String,
 ) {
 
-    companion object{
-        fun extract(context: Context,
-                            url:String): Extractor?{
+    companion object {
+        /**
+         * @param context used for network checking
+         * @param url direct URL from user input
+         * @return Child class of [Extractor] based on input URL
+         * and `null` if no suitable [Extractor] found
+         */
+        fun findExtractor(
+            context: Context,
+            url: String,
+        ): Extractor? {
             return when {
                 url.contains("facebook|fb".toRegex()) -> Facebook(context, url)
-                url.contains("instagram") -> Instagram(context,url)
+                url.contains("instagram") -> Instagram(context, url)
                 else -> null
             }
         }
@@ -37,14 +52,17 @@ abstract class Extractor(
 
     protected var headers: Hashtable<String, String> = Hashtable()
 
-    //Login user cookies
+    /**
+     * If media is private just pass valid cookies to
+     * extract list of [Formats]
+     */
     var cookies: String? = null
-    set(value) {
-        value?.let {
-            headers["Cookie"] = it
+        set(value) {
+            value?.let {
+                headers["Cookie"] = it
+            }
+            field = value
         }
-        field = value
-    }
 
 
     protected val videoFormats = mutableListOf<Formats>()
@@ -56,6 +74,10 @@ abstract class Extractor(
         }
 
 
+    /**
+     * starting point of all child of [Extractor]
+     * where net safe analyze will be called
+     */
     suspend fun start(progressCallback: (Result) -> Unit) {
         onProgress = progressCallback
         safeAnalyze()
@@ -67,7 +89,7 @@ abstract class Extractor(
             try {
                 analyze()
             } catch (e: Exception) {
-                onProgress(Result.Failed(Error.InternalError(e.toString())))
+                onProgress(Result.Failed(Error.InternalError("Error in SafeAnalyze", e)))
             }
         } else onProgress(Result.Failed(Error.NetworkError))
     }

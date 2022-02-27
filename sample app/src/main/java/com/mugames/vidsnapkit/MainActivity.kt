@@ -7,7 +7,6 @@ import android.widget.Button
 import com.mugames.vidsnapkit.dataholders.Error
 import com.mugames.vidsnapkit.dataholders.Result
 import com.mugames.vidsnapkit.extractor.Extractor
-import com.mugames.vidsnapkit.extractor.Facebook
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : AppCompatActivity() {
@@ -46,6 +45,12 @@ class MainActivity : AppCompatActivity() {
                     is Error.NonFatalError -> {
                         Log.e(TAG, "error = : ${error.message}")
                     }
+                    is Error.InvalidUrl -> {
+                        Log.e(TAG, "URL problem: ")
+                    }
+                    Error.NetworkError -> {
+                        Log.e(TAG, "Check your connection: ")
+                    }
                 }
             }
             else -> {
@@ -56,8 +61,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun onClick() {
         val url = "FACEBOOK_INSTA_URL"
+        //Use proper CoroutineScope
         runBlocking {
-            val extractor = Extractor.extract(this@MainActivity, url)
+            // First find Extractor
+            val extractor = Extractor.findExtractor(this@MainActivity, url)
+            // Then call extractor.start(progressCallback: (Result) -> Unit)
             extractor?.apply {
 //                cookies = "REQUIRED_COOKIES"
                 start(callback)

@@ -20,7 +20,7 @@ import java.util.regex.Pattern
  */
 class Instagram internal constructor(context: Context, url: String) : Extractor(context, url) {
     companion object {
-        const val TAG: String = Statics.tag.plus(":Instagram")
+        const val TAG: String = Statics.TAG.plus(":Instagram")
         const val STORIES_URL = "https://www.instagram.com/stories/%s/?__a=1"
         const val STORIES_API = "https://i.instagram.com/api/v1/feed/user/%s/story/"
         const val NO_VIDEO_STATUS_AVAILABLE = "No video Status available"
@@ -61,7 +61,6 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
     }
 
     override suspend fun analyze() {
-        onProgress(Result.Progress(ProgressState.PreStart))
         formats.src = "Instagram"
         formats.url = inputUrl
         if (!isProfileUrl())
@@ -86,6 +85,7 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
 
 
     private suspend fun extractInfoShared(page: String) {
+        onProgress(Result.Progress(ProgressState.Start))
         val pattern = Pattern.compile("window\\._sharedData\\s*=\\s*(\\{.+?\\});")
         val matcher = pattern.matcher(page)
         val jsonString = if (matcher.find()) {
@@ -121,6 +121,7 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
 
 
     private suspend fun setInfo(media: JSONObject) {
+        onProgress(Result.Progress(ProgressState.Middle))
         var videoName: String? = media.getNullableString("title")
 
         if (videoName == null || videoName == "null" || videoName.isEmpty()) videoName =
@@ -139,8 +140,8 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
                 url,
                 MimeType.VIDEO_MP4
             ))
-            formats.thumbnail[Util.getResolutionFromUrl(media.getString("thumbnail_src"))] =
-                media.getString("thumbnail_src")
+            formats.thumbnail.add(Pair(Util.getResolutionFromUrl(media.getString("thumbnail_src"))
+                ,media.getString("thumbnail_src")))
             videoFormats.add(formats)
         } ?: run {
             val edges: JSONArray? = media
@@ -152,9 +153,10 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
                     val format = formats.copy(videoData = mutableListOf())
                     val node = edgesObj.getJSONObject(i).getJSONObject("node")
                     if (node.getBoolean("is_video")) {
-                        format.thumbnail[
-                                Util.getResolutionFromUrl(node.getString("display_url"))
-                        ] = node.getString("display_url")
+                        format.thumbnail.add(Pair(
+                            Util.getResolutionFromUrl(node.getString("display_url")),
+                            node.getString("display_url")
+                        ))
                         format.videoData.add(VideoResource(
                             node.getString("video_url"),
                             MimeType.VIDEO_MP4
@@ -203,6 +205,7 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
             val item = items.getJSONObject(i)
 
             if (formats.title.isEmpty()) {
+                onProgress(Result.Progress(ProgressState.Middle))
                 val caption = item.getNullableJSONObject("caption")
                 formats.title = Util.filterName(
                     caption?.getNullableString("text") ?: run {
@@ -215,7 +218,7 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
 
             val videoVersion = item.getNullableJSONArray("video_versions")
             videoVersion?.let {
-                val format = formats.copy(videoData = mutableListOf(), thumbnail = mutableMapOf())
+                val format = formats.copy(videoData = mutableListOf(), thumbnail = mutableListOf())
                 for (j in 0 until it.length()) {
                     val video = it.getJSONObject(j)
                     format.videoData.add(VideoResource(
@@ -228,7 +231,12 @@ class Instagram internal constructor(context: Context, url: String) : Extractor(
                 val imageVersion2 = item.getJSONObject("image_versions2")
                 val candidates = imageVersion2.getJSONArray("candidates")
                 val thumbnailUrl = candidates.getJSONObject(0).getString("url")
-                format.thumbnail[Util.getResolutionFromUrl(thumbnailUrl)] = thumbnailUrl
+                format.thumbnail.add(
+                    Pair(
+                        Util.getResolutionFromUrl(thumbnailUrl),
+                        thumbnailUrl
+                    )
+                )
 
                 videoFormats.add(format)
             } ?: run {
