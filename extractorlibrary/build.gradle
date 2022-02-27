@@ -12,7 +12,7 @@ android {
         minSdk 21
         targetSdk 31
         versionCode 1
-        versionName "1.0"
+        versionName "0.0.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -94,15 +94,6 @@ android {
                     // You can then customize attributes of the publication as shown below.
                     groupId = 'com.mugames.vidsnapkit'
                     artifactId = 'alpha'
-                    version = '0.0.1'
-                }
-                // Creates a Maven publication called “debug”.
-                debug(MavenPublication) {
-                    // Applies the component for the debug build variant.
-                    from components.debug
-
-                    groupId = 'com.mugames.vidsnapkit'
-                    artifactId = 'alpha-debug'
                     version = '0.0.1'
                 }
             }
