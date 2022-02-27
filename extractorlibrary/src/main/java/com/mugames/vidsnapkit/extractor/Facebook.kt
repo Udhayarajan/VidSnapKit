@@ -52,8 +52,8 @@ class Facebook internal constructor(context: Context, url: String) : Extractor(c
         headers["User-Agent"] = userAgent
         if (inputUrl.startsWith("facebook:")) inputUrl =
             "https://www.facebook.com/video/video.php?v=${findVideoId()}"
-        onProgress(Result.Progress(ProgressState.Start))
         try {
+            onProgress(Result.Progress(ProgressState.Start))
             extractInfo()
         } catch (e: JSONException) {
             e.printStackTrace()
@@ -128,11 +128,12 @@ class Facebook internal constructor(context: Context, url: String) : Extractor(c
             if (formats.thumbnail.isEmpty()) {
                 m = Pattern.compile("\"thumbnailImage\":\\{\"uri\":\"(.*?)\"\\}")
                     .matcher(webPage)
-                if (m.find()) formats.thumbnail[Util.getResolutionFromUrl(m.group(1)!!)] =
-                    m.group(1)!! else {
+                if (m.find()) formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!)
+                    ,m.group(1)!! ))
+                    else {
                     m = Pattern.compile("\"thumbnailUrl\":\"(.*?)\"").matcher(webPage)
-                    if (m.find()) formats.thumbnail[Util.getResolutionFromUrl(m.group(1)!!)] =
-                        m.group(1)!!
+                    if (m.find()) formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!)
+                        , m.group(1)!!))
                 }
             }
             if (formats.title.isEmpty() || formats.title == "null") {
@@ -283,8 +284,8 @@ class Facebook internal constructor(context: Context, url: String) : Extractor(c
             ?: media.getJSONObject("preferred_thumbnail")
                 .getJSONObject("image")
                 .getString("uri")
-        val thumbnailRes = Util.getResolutionFromUrl(thumbnailUrl) ?: "--"
-        formats.thumbnail[thumbnailRes] = thumbnailUrl
+        val thumbnailRes = Util.getResolutionFromUrl(thumbnailUrl)
+        formats.thumbnail.add(Pair(thumbnailRes, thumbnailUrl))
         formats.title = media.getNullableString("name")
             ?: media.getNullableJSONObject("savable_description")
                 ?.getNullableString("text")
@@ -390,7 +391,7 @@ class Facebook internal constructor(context: Context, url: String) : Extractor(c
 
 
     companion object {
-        const val TAG: String = Statics.tag.plus(":Facebook")
+        const val TAG: String = Statics.TAG.plus(":Facebook")
         const val SUCCESS = -1 //Null if fails
         var PAGELET_REGEX =
             "(?:pagelet_group_mall|permalink_video_pagelet|hyperfeed_story_id_[0-9a-f]+)"
