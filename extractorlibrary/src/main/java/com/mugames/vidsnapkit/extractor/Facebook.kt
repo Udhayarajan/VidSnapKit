@@ -17,7 +17,7 @@ import java.util.regex.Pattern
  * @author Udhaya
  * Created on 21-01-2022
  */
-class Facebook internal constructor(context: Context, url: String) : Extractor(context,url) {
+class Facebook internal constructor(url: String) : Extractor(url) {
     private var triedWithForceEng = false
 
     private val formats = Formats()

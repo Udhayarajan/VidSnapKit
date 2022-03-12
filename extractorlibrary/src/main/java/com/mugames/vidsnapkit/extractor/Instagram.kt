@@ -18,7 +18,7 @@ import java.util.regex.Pattern
  * @author Udhaya
  * Created on 16-02-2022
  */
-class Instagram internal constructor(context: Context, url: String) : Extractor(context, url) {
+class Instagram internal constructor(url: String) : Extractor(url) {
     companion object {
         const val TAG: String = Statics.TAG.plus(":Instagram")
         const val STORIES_URL = "https://www.instagram.com/stories/%s/?__a=1"

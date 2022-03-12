@@ -10,6 +10,7 @@ import com.mugames.vidsnapkit.dataholders.ProgressState
 import com.mugames.vidsnapkit.dataholders.Result
 import com.mugames.vidsnapkit.network.HttpRequest
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.*
 
 /**
@@ -24,31 +25,32 @@ import java.util.*
  *  use [Extractor.findExtractor] to get required extractor
  */
 abstract class Extractor(
-    context: Context,
     url: String,
 ) {
 
     companion object {
         /**
-         * @param context used for network checking
          * @param url direct URL from user input
          * @return Child class of [Extractor] based on input URL
          * and `null` if no suitable [Extractor] found
          */
         fun findExtractor(
-            context: Context,
             url: String,
         ): Extractor? {
             return when {
-                url.contains("facebook|fb".toRegex()) -> Facebook(context, url)
-                url.contains("instagram") -> Instagram(context, url)
+                url.contains("facebook|fb".toRegex()) -> Facebook(url)
+                url.contains("instagram") -> Instagram(url)
                 else -> null
             }
         }
     }
 
     protected var inputUrl: String = url
-    protected lateinit var onProgress: (Result) -> Unit
+    protected var onProgress: (Result) -> Unit = { result ->
+
+    }
+
+    val resultFlow:MutableStateFlow<Result> = MutableStateFlow(Result.Progress(ProgressState.PreStart))
 
     protected var headers: Hashtable<String, String> = Hashtable()
 
@@ -67,12 +69,6 @@ abstract class Extractor(
 
     protected val videoFormats = mutableListOf<Formats>()
 
-    private var context: Context = context
-        get() = field.applicationContext
-        set(value) {
-            field = value.applicationContext
-        }
-
 
     /**
      * starting point of all child of [Extractor]
@@ -85,13 +81,11 @@ abstract class Extractor(
 
 
     private suspend fun safeAnalyze() {
-        if (isNetworkAvailable()) {
-            try {
-                analyze()
-            } catch (e: Exception) {
-                onProgress(Result.Failed(Error.InternalError("Error in SafeAnalyze", e)))
-            }
-        } else onProgress(Result.Failed(Error.NetworkError))
+        try {
+            analyze()
+        } catch (e: Exception) {
+            onProgress(Result.Failed(Error.InternalError("Error in SafeAnalyze", e)))
+        }
     }
 
 
@@ -134,25 +128,5 @@ abstract class Extractor(
             }
         }
         return sizes.awaitAll()
-    }
-
-    @SuppressWarnings("deprecation")
-    private fun isNetworkAvailable(): Boolean {
-        val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val networkCapabilities =
-                connectivityManager.getNetworkCapabilities(network) ?: return false
-            if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return true
-            if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) true else networkCapabilities.hasTransport(
-                NetworkCapabilities.TRANSPORT_ETHERNET)
-        } else {
-            val networkInfo = connectivityManager.activeNetworkInfo
-            when (networkInfo!!.type) {
-                ConnectivityManager.TYPE_WIFI, ConnectivityManager.TYPE_ETHERNET, ConnectivityManager.TYPE_MOBILE -> true
-                else -> false
-            }
-        }
     }
 }
