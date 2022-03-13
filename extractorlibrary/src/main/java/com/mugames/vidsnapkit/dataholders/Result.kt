@@ -8,18 +8,11 @@ package com.mugames.vidsnapkit.dataholders
 /**
  * It contains callbacks what's happening in Extraction Process
  *
- * @param formats Once Extraction completed successfully list of [Formats] will be returned, Default Value: `null`
- * @param error If something wrong it will be returned with [Error] instance. Default Value: [Error.NonFatalError]
- * @param progressState Simple way to estimate/notify users that everything going correctly
  */
-sealed class Result(
-    val formats: List<Formats>? = null,
-    val error: Error = Error.NonFatalError("empty error don't care"),
-    val progressState: ProgressState = ProgressState.PreStart,
-) {
-    class Success(formats: List<Formats>) : Result(formats)
-    class Progress(progressState: ProgressState) : Result(progressState = progressState)
-    class Failed(error: Error) : Result(error = error)
+sealed class Result {
+    data class Success(val formats: List<Formats>) : Result()
+    data class Progress(val progressState: ProgressState) : Result()
+    data class Failed(val error: Error) : Result()
 }
 
 /**
@@ -45,12 +38,17 @@ sealed class Error(val message: String? = null, val e: Exception? = null) {
     object LoginInRequired : Error()
 
     /**
+     * Called when cookies are invalid
+     */
+    object InvalidCookies : Error()
+
+    /**
      * Report this kind of error to VidSnapKit developer
      */
     class InternalError(message: String, e: Exception? = null) : Error(message, e)
 
     /**
-     * These are minor error happens when cookies is invalid or video not found etc
+     * These are minor error happens video not found etc
      */
     class NonFatalError(message: String) : Error(message)
 }

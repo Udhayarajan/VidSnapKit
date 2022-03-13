@@ -23,6 +23,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         const val TAG: String = Statics.TAG.plus(":Instagram")
         const val STORIES_URL = "https://www.instagram.com/stories/%s/?__a=1"
         const val STORIES_API = "https://i.instagram.com/api/v1/feed/user/%s/story/"
+        const val PROFILE_API = "https://www.instagram.com/%s/?__a=1"
         const val NO_VIDEO_STATUS_AVAILABLE = "No video Status available"
         const val NO_STATUS_AVAILABLE = "No stories Available to Download"
     }
@@ -34,6 +35,15 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         return !inputUrl.contains("(/reel/|/tv/)\\w{11}".toRegex())
     }
 
+    private fun canDownloadAccess(jsonObject: JSONObject): Boolean {
+        val user = jsonObject.getJSONObject("graphql")
+            .getJSONObject("user")
+        val isBlocked = user.getBoolean("has_blocked_viewer")
+        val isPrivate = user.getBoolean("is_private")
+        val followedByViewer = user.getBoolean("followed_by_viewer")
+        return (isPrivate && followedByViewer) || isBlocked || !isPrivate
+    }
+
     private fun getUserName(): String? {
         val matcher = Pattern
             .compile("(?:https|http)://(?:www\\.|.*?)instagram.com/(?:stories/|)([A-Za-z0-9_.]+)")
@@ -43,7 +53,13 @@ class Instagram internal constructor(url: String) : Extractor(url) {
     }
 
     private suspend fun getUserID(): String? = cookies?.let { _ ->
+
         getUserName()?.let {
+            val response = HttpRequest(String.format(PROFILE_API, it), headers).getResponse()
+            if (!canDownloadAccess(JSONObject(response))){
+                onProgress(Result.Failed(Error.InvalidCookies))
+                return null
+            }
             val page = HttpRequest(String.format(STORIES_URL, it), headers).getResponse()
             try {
                 val user = JSONObject(page).getJSONObject("user")
@@ -114,7 +130,13 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             ) {
                 onProgress(Result.Failed(Error.LoginInRequired))
             } else {
-                onProgress(Result.Failed(Error.InternalError("can't find problem")))
+                val user0 = jsonObject
+                    .getJSONObject("entry_data")
+                    .getJSONArray("ProfilePage")
+                    .getJSONObject(0)
+                if (!canDownloadAccess(user0))
+                    onProgress(Result.Failed(Error.InvalidCookies))
+                else onProgress(Result.Failed(Error.InternalError("can't find problem")))
             }
         }
     }
@@ -140,8 +162,8 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                 url,
                 MimeType.VIDEO_MP4
             ))
-            formats.thumbnail.add(Pair(Util.getResolutionFromUrl(media.getString("thumbnail_src"))
-                ,media.getString("thumbnail_src")))
+            formats.thumbnail.add(Pair(Util.getResolutionFromUrl(media.getString("thumbnail_src")),
+                media.getString("thumbnail_src")))
             videoFormats.add(formats)
         } ?: run {
             val edges: JSONArray? = media
