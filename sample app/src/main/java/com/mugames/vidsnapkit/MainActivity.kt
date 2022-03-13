@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val callback: (Result) -> Unit = { result ->
         when (result) {
             is Result.Success -> {
-                for (format in result.formats!!) {
+                for (format in result.formats) {
                     Log.d(TAG, "onClick: $format")
                 }
             }
@@ -51,10 +51,13 @@ class MainActivity : AppCompatActivity() {
                     Error.NetworkError -> {
                         Log.e(TAG, "Check your connection: ")
                     }
+                    Error.InvalidCookies -> {
+                        Log.e(TAG, "Check your connection: ")
+                    }
                 }
             }
             else -> {
-                Log.d(TAG, "onClick: ${result.progressState}")
+                Log.d(TAG, "onClick: $result")
             }
         }
     }
@@ -64,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         //Use proper CoroutineScope
         runBlocking {
             // First find Extractor
-            val extractor = Extractor.findExtractor(this@MainActivity, url)
+            val extractor = Extractor.findExtractor(url)
             // Then call extractor.start(progressCallback: (Result) -> Unit)
             extractor?.apply {
 //                cookies = "REQUIRED_COOKIES"
