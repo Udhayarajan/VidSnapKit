@@ -46,11 +46,8 @@ abstract class Extractor(
     }
 
     protected var inputUrl: String = url
-    protected var onProgress: (Result) -> Unit = { result ->
+    protected lateinit var onProgress: (Result) -> Unit
 
-    }
-
-    val resultFlow:MutableStateFlow<Result> = MutableStateFlow(Result.Progress(ProgressState.PreStart))
 
     protected var headers: Hashtable<String, String> = Hashtable()
 

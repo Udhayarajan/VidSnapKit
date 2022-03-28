@@ -32,16 +32,16 @@ class Instagram internal constructor(url: String) : Extractor(url) {
 
     private fun isProfileUrl(): Boolean {
         if (inputUrl.contains("/p/")) return false
-        return !inputUrl.contains("(/reel/|/tv/)\\w{11}".toRegex())
+        return !inputUrl.contains("(/reel/|/tv/)[\\w-]{11}".toRegex())
     }
 
-    private fun canDownloadAccess(jsonObject: JSONObject): Boolean {
+    private fun isAccessible(jsonObject: JSONObject): Boolean {
         val user = jsonObject.getJSONObject("graphql")
             .getJSONObject("user")
         val isBlocked = user.getBoolean("has_blocked_viewer")
         val isPrivate = user.getBoolean("is_private")
         val followedByViewer = user.getBoolean("followed_by_viewer")
-        return (isPrivate && followedByViewer) || isBlocked || !isPrivate
+        return (isPrivate && followedByViewer) || !isBlocked || !isPrivate
     }
 
     private fun getUserName(): String? {
@@ -56,7 +56,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
 
         getUserName()?.let {
             val response = HttpRequest(String.format(PROFILE_API, it), headers).getResponse()
-            if (!canDownloadAccess(JSONObject(response))){
+            if (!isAccessible(JSONObject(response))){
                 onProgress(Result.Failed(Error.InvalidCookies))
                 return null
             }
@@ -134,7 +134,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                     .getJSONObject("entry_data")
                     .getJSONArray("ProfilePage")
                     .getJSONObject(0)
-                if (!canDownloadAccess(user0))
+                if (!isAccessible(user0))
                     onProgress(Result.Failed(Error.InvalidCookies))
                 else onProgress(Result.Failed(Error.InternalError("can't find problem")))
             }
