@@ -2,7 +2,6 @@ package com.mugames.vidsnapkit.network
 
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
-import io.ktor.client.features.logging.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -25,9 +24,6 @@ class HttpRequest(
         fun createClient(): HttpInterface {
             return HttpInterfaceImpl(HttpClient(Android){
                 followRedirects = true
-                install(Logging){
-                    level = LogLevel.ALL
-                }
             })
         }
     }
