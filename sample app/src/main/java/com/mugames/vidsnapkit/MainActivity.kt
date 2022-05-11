@@ -48,11 +48,14 @@ class MainActivity : AppCompatActivity() {
                     is Error.InvalidUrl -> {
                         Log.e(TAG, "URL problem: ")
                     }
-                    Error.NetworkError -> {
+                    is Error.NetworkError -> {
                         Log.e(TAG, "Check your connection: ")
                     }
-                    Error.InvalidCookies -> {
+                    is Error.InvalidCookies -> {
                         Log.e(TAG, "Check your connection: ")
+                    }
+                    is Error.Instagram404Error -> {
+                        Log.e(TAG, "404 and cookies used = " + error.isCookiesUsed)
                     }
                 }
             }

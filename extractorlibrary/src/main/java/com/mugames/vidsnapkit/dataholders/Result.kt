@@ -56,7 +56,7 @@ sealed class Error(val message: String? = null, val e: Exception? = null) {
      * Sometimes unexpectedly instagram returns 404 ERROR
      * even for public post
      */
-    class Instagram404Error(isCookiesUsed: Boolean): Error()
+    class Instagram404Error(val isCookiesUsed: Boolean): Error()
 }
 
 /**
