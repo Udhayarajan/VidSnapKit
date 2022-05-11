@@ -1,6 +1,7 @@
 package com.mugames.vidsnapkit.network
 
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -30,17 +31,17 @@ class HttpInterfaceImpl(
                         }
                     }
                 }
-            }
-        } catch (e: Exception) {
+            }.body()
+        } catch (e: Error) {
             throw e
         }
     }
 
     override suspend fun getSize(url: String, headers: Hashtable<String, String>?): Long {
-        val request = client.request<HttpResponse>(url) {
+        return client.get {
+            url(url)
             method = HttpMethod.Head
-        }
-        return request.headers["content-length"]?.toLong() ?: Long.MIN_VALUE
+        }.headers["content-length"]?.toLong() ?: Long.MIN_VALUE
     }
 
 }

@@ -9,6 +9,7 @@ import com.mugames.vidsnapkit.dataholders.Formats
 import com.mugames.vidsnapkit.dataholders.ProgressState
 import com.mugames.vidsnapkit.dataholders.Result
 import com.mugames.vidsnapkit.network.HttpRequest
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.*
@@ -81,7 +82,10 @@ abstract class Extractor(
         try {
             analyze()
         } catch (e: Exception) {
-            onProgress(Result.Failed(Error.InternalError("Error in SafeAnalyze", e)))
+            if (e is ClientRequestException && inputUrl.contains("instagram"))
+                onProgress(Result.Failed(Error.Instagram404Error(cookies != null)))
+            else
+                onProgress(Result.Failed(Error.InternalError("Error in SafeAnalyze", e)))
         }
     }
 

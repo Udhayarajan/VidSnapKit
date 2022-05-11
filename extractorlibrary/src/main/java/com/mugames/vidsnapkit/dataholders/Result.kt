@@ -51,13 +51,18 @@ sealed class Error(val message: String? = null, val e: Exception? = null) {
      * These are minor error happens video not found etc
      */
     class NonFatalError(message: String) : Error(message)
+
+    /**
+     * Sometimes unexpectedly instagram returns 404 ERROR
+     * even for public post
+     */
+    class Instagram404Error(isCookiesUsed: Boolean): Error()
 }
 
 /**
  * Just to show progress to UI/UX
  */
 sealed class ProgressState {
-    object PreStart : ProgressState()
     object Start : ProgressState()
     object Middle : ProgressState()
     object End : ProgressState()

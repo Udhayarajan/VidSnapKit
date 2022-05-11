@@ -61,10 +61,10 @@ android {
 
         implementation 'androidx.core:core-ktx:1.7.0'
         implementation 'androidx.appcompat:appcompat:1.4.1'
-        implementation 'com.google.android.material:material:1.5.0'
+        implementation 'com.google.android.material:material:1.6.0'
         implementation files('libs/java-json.jar')
 
-        def ktor_version = "1.6.7"
+        def ktor_version = "2.0.1"
         implementation "io.ktor:ktor-client-core:$ktor_version"
         implementation "io.ktor:ktor-client-android:$ktor_version"
         implementation "io.ktor:ktor-client-serialization:$ktor_version"
@@ -86,7 +86,7 @@ android {
                     // You can then customize attributes of the publication as shown below.
                     groupId = 'com.mugames.vidsnapkit'
                     artifactId = 'alpha'
-                    version = '0.0.4'
+                    version = '0.0.5'
                 }
             }
         }
