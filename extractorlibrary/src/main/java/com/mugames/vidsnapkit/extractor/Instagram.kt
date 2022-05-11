@@ -41,7 +41,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         val isBlocked = user.getBoolean("has_blocked_viewer")
         val isPrivate = user.getBoolean("is_private")
         val followedByViewer = user.getBoolean("followed_by_viewer")
-        return (isPrivate && followedByViewer) || !isBlocked || !isPrivate
+        return ((isPrivate && followedByViewer)  || !isPrivate) && !isBlocked
     }
 
     private fun getUserName(): String? {
