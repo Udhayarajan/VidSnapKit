@@ -38,9 +38,9 @@ class HttpInterfaceImpl(
     }
 
     override suspend fun getSize(url: String, headers: Hashtable<String, String>?): Long {
-        return client.get {
-            url(url)
+        return client.request {
             method = HttpMethod.Head
+            url(url)
         }.headers["content-length"]?.toLong() ?: Long.MIN_VALUE
     }
 
