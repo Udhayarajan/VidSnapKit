@@ -41,7 +41,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         val isBlocked = user.getBoolean("has_blocked_viewer")
         val isPrivate = user.getBoolean("is_private")
         val followedByViewer = user.getBoolean("followed_by_viewer")
-        return ((isPrivate && followedByViewer)  || !isPrivate) && !isBlocked
+        return ((isPrivate && followedByViewer) || !isPrivate) && !isBlocked
     }
 
     private fun getUserName(): String? {
@@ -56,7 +56,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
 
         getUserName()?.let {
             val response = HttpRequest(String.format(PROFILE_API, it), headers).getResponse()
-            if (!isAccessible(JSONObject(response))){
+            if (!isAccessible(JSONObject(response))) {
                 onProgress(Result.Failed(Error.InvalidCookies))
                 return null
             }
@@ -125,10 +125,14 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                 extractInfoAdd(page)
             }
         } ?: run {
-            if (jsonObject.getNullableJSONObject("entry_data")
-                    ?.getNullableJSONArray("LoginAndSignupPage") != null
-            ) {
+            fun isObjectPresentInEntryData(objectName: String): Boolean {
+                return jsonObject.getNullableJSONObject("entry_data")
+                    ?.getNullableJSONArray(objectName) != null
+            }
+            if (isObjectPresentInEntryData("LoginAndSignupPage")) {
                 onProgress(Result.Failed(Error.LoginInRequired))
+            } else if (isObjectPresentInEntryData("HttpErrorPage")) {
+                onProgress(Result.Failed(Error.Instagram404Error(cookies != null)))
             } else {
                 val user0 = jsonObject
                     .getJSONObject("entry_data")
