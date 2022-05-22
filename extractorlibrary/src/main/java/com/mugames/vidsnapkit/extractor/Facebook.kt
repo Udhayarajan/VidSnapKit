@@ -13,6 +13,7 @@ import org.json.XML
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+
 /**
  * @author Udhaya
  * Created on 21-01-2022
@@ -66,7 +67,7 @@ class Facebook internal constructor(url: String) : Extractor(url) {
 
     private suspend fun extractInfo() {
         inputUrl = inputUrl.replace("://m.facebook\\.com/".toRegex(), "://www.facebook.com/")
-        scratchWebPage(HttpRequest(inputUrl,headers).getResponse())
+        scratchWebPage(HttpRequest(inputUrl, headers).getResponse())
     }
 
     private suspend fun extractForceEng() {
@@ -125,33 +126,42 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         }
         videoData?.let {
             var m: Matcher
-            if (formats.thumbnail.isEmpty()) {
-                m = Pattern.compile("\"thumbnailImage\":\\{\"uri\":\"(.*?)\"\\}")
-                    .matcher(webPage)
-                if (m.find()) formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!)
-                    ,m.group(1)!! ))
-                    else {
-                    m = Pattern.compile("\"thumbnailUrl\":\"(.*?)\"").matcher(webPage)
-                    if (m.find()) formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!)
-                        , m.group(1)!!))
-                }
-            }
-            if (formats.title.isEmpty() || formats.title == "null") {
-                m = Pattern.compile("(?:true|false),\"name\":\"(.*?)\",\"savable")
-                    .matcher(webPage)
-                if (m.find()) {
-                    formats.title = m.group(1)!!
-                } else {
-                    m =
-                        Pattern.compile("<[Tt]itle id=\"pageTitle\">(.*?) \\| Facebook<\\/title>")
-                            .matcher(webPage)
-                    if (m.find()) formats.title = decodeHTML(m.group(1)).toString() else {
-                        m = Pattern.compile("title\" content=\"(.*?)\"").matcher(webPage)
-                        if (m.find()) formats.title = decodeHTML(m.group(1)).toString()
+            fun extractThumbnail(vararg regexes: Regex) {
+                for (regex in regexes) {
+                    m = Pattern.compile(regex.toString()).matcher(webPage)
+                    if (m.find()) {
+                        formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!),
+                            m.group(1)!!))
+                        return
                     }
                 }
-                if (formats.title.isEmpty() || formats.title == "null")
-                    formats.title = "Facebook_Video"
+            }
+
+            fun extractTitle(vararg regexes: Regex, default: String = "") {
+                for (regex in regexes) {
+                    m = Pattern.compile(regex.toString())
+                        .matcher(webPage)
+                    if (m.find()) {
+                        formats.title = decodeHTML(m.group(1)!!).toString()
+                        return
+                    }
+                    formats.title = default
+                }
+            }
+
+            if (formats.thumbnail.isEmpty()) extractThumbnail(
+                Regex("\"thumbnailImage\":\\{\"uri\":\"(.*?)\"\\}"),
+                Regex("\"thumbnailUrl\":\"(.*?)\""),
+                Regex("\"twitter:image\"\\s*?content\\s*?=\\s*?\"(.*?)\"")
+            )
+
+            if (formats.title.isEmpty() || formats.title == "null") {
+                extractTitle(
+                    Regex("(?:true|false),\"name\":\"(.*?)\",\"savable"),
+                    Regex("<[Tt]itle id=\"pageTitle\">(.*?) \\| Facebook<\\/title>"),
+                    Regex("title\" content=\"(.*?)\""),
+                    default = "Facebook_Video"
+                )
             }
             videoFormats.add(formats)
             finalize()
@@ -297,8 +307,8 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         }
 
         val res: String = media.getNullableString("width")
-            ?: media["original_width"].toString() + "x" + (media.getNullableString("height")
-                ?: media["original_height"].toString())
+            ?: (media["original_width"].toString() + "x" + (media.getNullableString("height")
+                ?: media["original_height"].toString()))
 
         for (suffix in arrayOf("", "_quality_hd")) {
             val playableUrl = media.getNullableString("playable_url$suffix")
@@ -394,6 +404,6 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         const val TAG: String = Statics.TAG.plus(":Facebook")
         const val SUCCESS = -1 //Null if fails
         var PAGELET_REGEX =
-            "(?:pagelet_group_mall|permalink_video_pagelet|hyperfeed_story_id_[0-9a-f]+)"
+            "(?:pagelet_group_mall|permalink_video_pagelet|hyperfeed_story_id_[0-9a-f]+)".toRegex()
     }
 }
