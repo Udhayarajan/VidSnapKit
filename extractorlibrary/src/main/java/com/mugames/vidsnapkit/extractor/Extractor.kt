@@ -41,6 +41,7 @@ abstract class Extractor(
             return when {
                 url.contains("facebook|fb".toRegex()) -> Facebook(url)
                 url.contains("instagram") -> Instagram(url)
+                url.contains("linkedin") -> LinkedIn(url)
                 else -> null
             }
         }
