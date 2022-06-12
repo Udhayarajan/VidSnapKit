@@ -65,7 +65,7 @@ class LinkedIn internal constructor(url: String) : Extractor(url) {
         fun findThumbnail(vararg regexes: Regex): String? {
             for (regex in regexes) {
                 val matcher = Pattern.compile(regex.toString()).matcher(page)
-                if (matcher.find()) return matcher.group(1)
+                if (matcher.find()) return Util.decodeHTML(matcher.group(1))
             }
             return null
         }
