@@ -1,12 +1,7 @@
 package com.mugames.vidsnapkit.extractor
 
-import android.content.Context
 import com.mugames.vidsnapkit.*
-import com.mugames.vidsnapkit.dataholders.Error
-import com.mugames.vidsnapkit.dataholders.Formats
-import com.mugames.vidsnapkit.dataholders.ProgressState
-import com.mugames.vidsnapkit.dataholders.Result
-import com.mugames.vidsnapkit.dataholders.VideoResource
+import com.mugames.vidsnapkit.dataholders.*
 import com.mugames.vidsnapkit.network.HttpRequest
 import org.json.JSONArray
 import org.json.JSONException
@@ -24,11 +19,15 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         const val STORIES_URL = "https://www.instagram.com/stories/%s/?__a=1"
         const val STORIES_API = "https://i.instagram.com/api/v1/feed/user/%s/story/"
         const val PROFILE_API = "https://www.instagram.com/%s/?__a=1"
+        const val POST_API = "https://i.instagram.com/api/v1/media/%s/info/"
         const val NO_VIDEO_STATUS_AVAILABLE = "No video Status available"
         const val NO_STATUS_AVAILABLE = "No stories Available to Download"
     }
 
     private val formats = Formats()
+
+    private fun getMediaId(page: String) =
+        page.substringAfter("\"media_id\":\"").substringBefore("\"")
 
     private fun isProfileUrl(): Boolean {
         if (inputUrl.contains("/p/")) return false
@@ -91,23 +90,39 @@ class Instagram internal constructor(url: String) : Extractor(url) {
 
     @Suppress("UNCHECKED_CAST")
     private suspend fun extractStories(userId: String) {
-        val dupHeader: Hashtable<String, String> = headers.clone() as Hashtable<String, String>
-        dupHeader["User-Agent"] =
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 105.0.0.11.118 (iPhone11,8; iOS 12_3_1; en_US; en-US; scale=2.00; 828x1792; 165586599)"
+        val dupHeader = getHeadersWithUserAgent()
         val stories = HttpRequest(STORIES_API.format(userId), dupHeader).getResponse()
         val reel = JSONObject(stories).getJSONObject("reel")
         extractFromItems(reel.getJSONArray("items"))
     }
 
+    private fun getHeadersWithUserAgent(): Hashtable<String, String> {
+        val dupHeader: Hashtable<String, String> = headers.clone() as Hashtable<String, String>
+        dupHeader["User-Agent"] =
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 105.0.0.11.118 (iPhone11,8; iOS 12_3_1; en_US; en-US; scale=2.00; 828x1792; 165586599)"
+        return dupHeader
+    }
+
 
     private suspend fun extractInfoShared(page: String) {
+        suspend fun newApiRequest() {
+            val mediaId = getMediaId(page)
+            val url = POST_API.format(mediaId)
+            try {
+                extractFromItems(JSONObject(HttpRequest(url,
+                    getHeadersWithUserAgent()).getResponse()).getJSONArray("items"))
+            }catch (e: JSONException){
+                onProgress(Result.Failed(Error.LoginInRequired))
+            }
+        }
+
         onProgress(Result.Progress(ProgressState.Start))
         val pattern = Pattern.compile("window\\._sharedData\\s*=\\s*(\\{.+?\\});")
         val matcher = pattern.matcher(page)
         val jsonString = if (matcher.find()) {
             matcher.group(1)
         } else {
-            onProgress(Result.Failed(Error.LoginInRequired))
+            newApiRequest()
             return
         }
         val jsonObject = JSONObject(jsonString)
@@ -144,7 +159,6 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             }
         }
     }
-
 
     private suspend fun setInfo(media: JSONObject) {
         onProgress(Result.Progress(ProgressState.Middle))
