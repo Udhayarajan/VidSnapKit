@@ -1,9 +1,6 @@
 package com.mugames.vidsnapkit.extractor
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
+import com.mugames.vidsnapkit.ProgressCallback
 import com.mugames.vidsnapkit.dataholders.Error
 import com.mugames.vidsnapkit.dataholders.Formats
 import com.mugames.vidsnapkit.dataholders.ProgressState
@@ -11,7 +8,7 @@ import com.mugames.vidsnapkit.dataholders.Result
 import com.mugames.vidsnapkit.network.HttpRequest
 import io.ktor.client.plugins.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.future.future
 import java.util.*
 
 /**
@@ -73,6 +70,17 @@ abstract class Extractor(
      * starting point of all child of [Extractor]
      * where net safe analyze will be called
      */
+    suspend fun start(progressCallback: ProgressCallback) {
+        onProgress = {
+            progressCallback.onProgress(it)
+        }
+        safeAnalyze()
+    }
+
+    fun startAsync(progressCallback: ProgressCallback){
+        GlobalScope.future { start(progressCallback) }
+    }
+
     suspend fun start(progressCallback: (Result) -> Unit) {
         onProgress = progressCallback
         safeAnalyze()
