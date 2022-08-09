@@ -11,7 +11,7 @@ package com.mugames.vidsnapkit.dataholders
  * @param url User pasted source URL
  * @param src Which Extractor is used Values can be "INSTAGRAM" or "FACEBOOK"
  *
- * @param thumbnail Pair of thumbnail quality with it's URL
+ * @param imageData List of possible image with it's URL
  * @param videoData List of available video qualities
  * @param audioData List of available audio qualities
  *
@@ -24,9 +24,10 @@ data class Formats(
     var url: String = "",
     var src: String = "",
 
-    val thumbnail: MutableList<Pair<String, String>> = mutableListOf(),
 
     val videoData: MutableList<VideoResource> = mutableListOf(),
+
+    val imageData: MutableList<ImageResource> = mutableListOf(),
 
     val audioData: MutableList<AudioResource> = mutableListOf(),
 
@@ -55,6 +56,6 @@ data class Formats(
      * @return [Pair] of quality and URL for selected [selectedThumbnailIndex]
      * if `null` then 1st thumbnail will be returned
      */
-    fun getSelectedThumbnailUrl(): Pair<String, String> = thumbnail[selectedThumbnailIndex ?: 0]
+    fun getSelectedThumbnailUrl(): ImageResource = imageData[selectedThumbnailIndex ?: 0]
 }
 

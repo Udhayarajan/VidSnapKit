@@ -1,6 +1,5 @@
 package com.mugames.vidsnapkit
 
-import androidx.core.text.HtmlCompat
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.util.regex.Pattern
@@ -19,13 +18,13 @@ class Util {
         fun decodeHTML(text: String?): String? {
             if (text == null) return null
             var decoded: String?
-            decoded = HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+//            decoded = HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
             try {
-                decoded = URLDecoder.decode(decoded, "UTF-8")
+                return URLDecoder.decode(text, "UTF-8")
             } catch (e: UnsupportedEncodingException) {
                 e.printStackTrace()
             }
-            return decoded
+            return null
         }
 
         /**

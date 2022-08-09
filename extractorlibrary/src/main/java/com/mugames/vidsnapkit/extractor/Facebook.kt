@@ -130,8 +130,8 @@ class Facebook internal constructor(url: String) : Extractor(url) {
                 for (regex in regexes) {
                     m = Pattern.compile(regex.toString()).matcher(webPage)
                     if (m.find()) {
-                        formats.thumbnail.add(Pair(Util.getResolutionFromUrl(m.group(1)!!),
-                            m.group(1)!!))
+                        formats.imageData.add(ImageResource(resolution = Util.getResolutionFromUrl(m.group(1)!!),
+                            url = m.group(1)!!))
                         return
                     }
                 }
@@ -149,7 +149,7 @@ class Facebook internal constructor(url: String) : Extractor(url) {
                 }
             }
 
-            if (formats.thumbnail.isEmpty()) extractThumbnail(
+            if (formats.imageData.isEmpty()) extractThumbnail(
                 Regex("\"thumbnailImage\":\\{\"uri\":\"(.*?)\"\\}"),
                 Regex("\"thumbnailUrl\":\"(.*?)\""),
                 Regex("\"twitter:image\"\\s*?content\\s*?=\\s*?\"(.*?)\"")
@@ -295,7 +295,7 @@ class Facebook internal constructor(url: String) : Extractor(url) {
                 .getJSONObject("image")
                 .getString("uri")
         val thumbnailRes = Util.getResolutionFromUrl(thumbnailUrl)
-        formats.thumbnail.add(Pair(thumbnailRes, thumbnailUrl))
+        formats.imageData.add(ImageResource(resolution = thumbnailRes, url = thumbnailUrl))
         formats.title = media.getNullableString("name")
             ?: media.getNullableJSONObject("savable_description")
                 ?.getNullableString("text")

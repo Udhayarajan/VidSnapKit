@@ -111,7 +111,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             try {
                 extractFromItems(JSONObject(HttpRequest(url,
                     getHeadersWithUserAgent()).getResponse()).getJSONArray("items"))
-            }catch (e: JSONException){
+            } catch (e: JSONException) {
                 onProgress(Result.Failed(Error.LoginInRequired))
             }
         }
@@ -180,8 +180,9 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                 url,
                 MimeType.VIDEO_MP4
             ))
-            formats.thumbnail.add(Pair(Util.getResolutionFromUrl(media.getString("thumbnail_src")),
-                media.getString("thumbnail_src")))
+            formats.imageData.add(ImageResource(resolution = Util.getResolutionFromUrl(media.getString(
+                "thumbnail_src")),
+                url = media.getString("thumbnail_src")))
             videoFormats.add(formats)
         } ?: run {
             val edges: JSONArray? = media
@@ -193,9 +194,9 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                     val format = formats.copy(videoData = mutableListOf())
                     val node = edgesObj.getJSONObject(i).getJSONObject("node")
                     if (node.getBoolean("is_video")) {
-                        format.thumbnail.add(Pair(
-                            Util.getResolutionFromUrl(node.getString("display_url")),
-                            node.getString("display_url")
+                        format.imageData.add(ImageResource(
+                            resolution = Util.getResolutionFromUrl(node.getString("display_url")),
+                            url = node.getString("display_url")
                         ))
                         format.videoData.add(VideoResource(
                             node.getString("video_url"),
@@ -256,9 +257,10 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             }
 
 
+
             val videoVersion = item.getNullableJSONArray("video_versions")
             videoVersion?.let {
-                val format = formats.copy(videoData = mutableListOf(), thumbnail = mutableListOf())
+                val format = formats.copy(videoData = mutableListOf(), imageData = mutableListOf())
                 for (j in 0 until it.length()) {
                     val video = it.getJSONObject(j)
                     format.videoData.add(VideoResource(
@@ -267,22 +269,35 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                         video.getString("width") + "x" + video.getString("height")
                     ))
                 }
-
                 val imageVersion2 = item.getJSONObject("image_versions2")
                 val candidates = imageVersion2.getJSONArray("candidates")
                 val thumbnailUrl = candidates.getJSONObject(0).getString("url")
-                format.thumbnail.add(
-                    Pair(
-                        Util.getResolutionFromUrl(thumbnailUrl),
-                        thumbnailUrl
+                format.imageData.add(
+                    ImageResource(
+                        resolution = Util.getResolutionFromUrl(thumbnailUrl),
+                        url = thumbnailUrl
                     )
                 )
-
                 videoFormats.add(format)
             } ?: run {
                 item.getNullableJSONArray("carousel_media")?.let {
                     extractFromItems(it)
                     return@run
+                }?:run {
+                    val imageVersion2 = item.getNullableJSONObject("image_versions2")
+                    imageVersion2?.let {
+                        val format = formats.copy(imageData = mutableListOf())
+
+                        val candidates = it.getJSONArray("candidates")
+                        val thumbnailUrl = candidates.getJSONObject(0).getString("url")
+                        format.imageData.add(
+                            ImageResource(
+                                resolution = Util.getResolutionFromUrl(thumbnailUrl),
+                                url = thumbnailUrl
+                            )
+                        )
+                        videoFormats.add(format)
+                    }
                 }
             }
         }

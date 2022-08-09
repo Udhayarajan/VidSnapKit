@@ -1,10 +1,7 @@
 package com.mugames.vidsnapkit.extractor
 
 import com.mugames.vidsnapkit.Util
-import com.mugames.vidsnapkit.dataholders.Formats
-import com.mugames.vidsnapkit.dataholders.ProgressState
-import com.mugames.vidsnapkit.dataholders.Result
-import com.mugames.vidsnapkit.dataholders.VideoResource
+import com.mugames.vidsnapkit.dataholders.*
 import com.mugames.vidsnapkit.network.HttpRequest
 import org.json.JSONArray
 import java.util.regex.Pattern
@@ -74,7 +71,7 @@ class LinkedIn internal constructor(url: String) : Extractor(url) {
             Regex("\"og:image\"\\s*content\\s*=\\s*\"(.*?)\">")
         )
         thumbnailUrl?.let {
-            formats.thumbnail.add(Pair("--", it))
+            formats.imageData.add(ImageResource(it))
         }
     }
 

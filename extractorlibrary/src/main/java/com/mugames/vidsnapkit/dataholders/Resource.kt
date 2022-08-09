@@ -1,5 +1,7 @@
 package com.mugames.vidsnapkit.dataholders
 
+import com.mugames.vidsnapkit.MimeType
+
 /**
  * @author Udhaya
  * Created on 16-02-2022
@@ -20,6 +22,13 @@ data class VideoResource(
     val quality: String = "--",
     var size: Long = 0,
     val hasAudio: Boolean = true
+)
+
+data class ImageResource(
+    val url: String,
+    val mimeType: String = MimeType.IMAGE_JPEG,
+    val resolution: String = "--",
+    var size: Long = 0,
 )
 
 /**
