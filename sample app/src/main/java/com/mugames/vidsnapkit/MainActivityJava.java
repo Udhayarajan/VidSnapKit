@@ -65,7 +65,7 @@ public class MainActivityJava extends AppCompatActivity {
     };
 
     private void onClick(){
-        String url = "FACEBOOK_INSTA_LINKEDIN_URL";
+        String url = "FACEBOOK_INSTA_LINKEDIN_SHARECHAT_URL";
         Extractor extractor = Extractor.Companion.findExtractor(url);
 //        extractor.setCookies("REQUIRED_COOKIES");
         if (extractor != null) {

@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onClick() {
-        val url = "FACEBOOK_INSTA_LINKEDIN_URL"
+        val url = "FACEBOOK_INSTA_LINKEDIN_SHARECHAT_URL"
         //Use proper CoroutineScope
         runBlocking {
             // First find Extractor

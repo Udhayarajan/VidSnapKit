@@ -39,6 +39,7 @@ abstract class Extractor(
                 url.contains("facebook|fb".toRegex()) -> Facebook(url)
                 url.contains("instagram") -> Instagram(url)
                 url.contains("linkedin") -> LinkedIn(url)
+                url.contains("sharechat") -> ShareChat(url)
                 else -> null
             }
         }
@@ -77,7 +78,7 @@ abstract class Extractor(
         safeAnalyze()
     }
 
-    fun startAsync(progressCallback: ProgressCallback){
+    fun startAsync(progressCallback: ProgressCallback) {
         GlobalScope.future { start(progressCallback) }
     }
 
@@ -107,13 +108,18 @@ abstract class Extractor(
             for (format in videoFormats) {
                 val video = async { getVideoSize(format) }
                 val audio = async { getAudioSize(format) }
+                val image = async { getImageSize(format) }
                 val videoSize = video.await()
                 val audioSize = audio.await()
+                val imageSize = image.await()
                 format.videoData.forEachIndexed { idx, elem ->
                     elem.size = videoSize[idx]
                 }
                 format.audioData.forEachIndexed { idx, elem ->
                     elem.size = audioSize[idx]
+                }
+                format.imageData.forEachIndexed { idx, elem ->
+                    elem.size = imageSize[idx]
                 }
             }
             onProgress(Result.Success(videoFormats))
@@ -135,6 +141,16 @@ abstract class Extractor(
         coroutineScope {
             for (audioData in format.audioData) {
                 sizes.add(async { HttpRequest(audioData.url).getSize() })
+            }
+        }
+        return sizes.awaitAll()
+    }
+
+    private suspend fun getImageSize(format: Formats): List<Long> {
+        val sizes = mutableListOf<Deferred<Long>>()
+        coroutineScope {
+            for (imageData in format.imageData) {
+                sizes.add(async { HttpRequest(imageData.url).getSize() })
             }
         }
         return sizes.awaitAll()
