@@ -83,7 +83,7 @@ android {
                     // You can then customize attributes of the publication as shown below.
                     groupId = 'com.mugames.vidsnapkit'
                     artifactId = 'beta'
-                    version = '1.0.1'
+                    version = '1.1.0'
                 }
             }
         }
