@@ -109,8 +109,14 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             val mediaId = getMediaId(page)
             val url = POST_API.format(mediaId)
             try {
-                extractFromItems(JSONObject(HttpRequest(url,
-                    getHeadersWithUserAgent()).getResponse()).getJSONArray("items"))
+                extractFromItems(
+                    JSONObject(
+                        HttpRequest(
+                            url,
+                            getHeadersWithUserAgent()
+                        ).getResponse()
+                    ).getJSONArray("items")
+                )
             } catch (e: JSONException) {
                 onProgress(Result.Failed(Error.LoginInRequired))
             }
@@ -151,8 +157,11 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             } else {
                 val user0 = jsonObject
                     .getJSONObject("entry_data")
-                    .getJSONArray("ProfilePage")
-                    .getJSONObject(0)
+                    .getNullableJSONArray("ProfilePage")
+                    ?.getJSONObject(0) ?: run {
+                    newApiRequest()
+                    return
+                }
                 if (!isAccessible(user0))
                     onProgress(Result.Failed(Error.InvalidCookies))
                 else onProgress(Result.Failed(Error.InternalError("can't find problem")))
@@ -176,13 +185,22 @@ class Instagram internal constructor(url: String) : Extractor(url) {
         formats.title = Util.filterName(videoName)
         val fileURL: String? = media.getNullableString("video_url")
         fileURL?.let { url ->
-            formats.videoData.add(VideoResource(
-                url,
-                MimeType.VIDEO_MP4
-            ))
-            formats.imageData.add(ImageResource(resolution = Util.getResolutionFromUrl(media.getString(
-                "thumbnail_src")),
-                url = media.getString("thumbnail_src")))
+            formats.videoData.add(
+                VideoResource(
+                    url,
+                    MimeType.VIDEO_MP4
+                )
+            )
+            formats.imageData.add(
+                ImageResource(
+                    resolution = Util.getResolutionFromUrl(
+                        media.getString(
+                            "thumbnail_src"
+                        )
+                    ),
+                    url = media.getString("thumbnail_src")
+                )
+            )
             videoFormats.add(formats)
         } ?: run {
             val edges: JSONArray? = media
@@ -194,20 +212,30 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                     val format = formats.copy(videoData = mutableListOf())
                     val node = edgesObj.getJSONObject(i).getJSONObject("node")
                     if (node.getBoolean("is_video")) {
-                        format.imageData.add(ImageResource(
-                            resolution = Util.getResolutionFromUrl(node.getString("display_url")),
-                            url = node.getString("display_url")
-                        ))
-                        format.videoData.add(VideoResource(
-                            node.getString("video_url"),
-                            MimeType.VIDEO_MP4
-                        ))
+                        format.imageData.add(
+                            ImageResource(
+                                resolution = Util.getResolutionFromUrl(node.getString("display_url")),
+                                url = node.getString("display_url")
+                            )
+                        )
+                        format.videoData.add(
+                            VideoResource(
+                                node.getString("video_url"),
+                                MimeType.VIDEO_MP4
+                            )
+                        )
                     }
                     videoFormats.add(format)
                 }
             } ?: run {
-                onProgress(Result.Failed(Error.InternalError("Media not found",
-                    Exception("$media"))))
+                onProgress(
+                    Result.Failed(
+                        Error.InternalError(
+                            "Media not found",
+                            Exception("$media")
+                        )
+                    )
+                )
             }
         }
 
@@ -257,17 +285,18 @@ class Instagram internal constructor(url: String) : Extractor(url) {
             }
 
 
-
             val videoVersion = item.getNullableJSONArray("video_versions")
             videoVersion?.let {
                 val format = formats.copy(videoData = mutableListOf(), imageData = mutableListOf())
                 for (j in 0 until it.length()) {
                     val video = it.getJSONObject(j)
-                    format.videoData.add(VideoResource(
-                        video.getString("url"),
-                        MimeType.VIDEO_MP4,
-                        video.getString("width") + "x" + video.getString("height")
-                    ))
+                    format.videoData.add(
+                        VideoResource(
+                            video.getString("url"),
+                            MimeType.VIDEO_MP4,
+                            video.getString("width") + "x" + video.getString("height")
+                        )
+                    )
                 }
                 val imageVersion2 = item.getJSONObject("image_versions2")
                 val candidates = imageVersion2.getJSONArray("candidates")
@@ -283,7 +312,7 @@ class Instagram internal constructor(url: String) : Extractor(url) {
                 item.getNullableJSONArray("carousel_media")?.let {
                     extractFromItems(it)
                     return@run
-                }?:run {
+                } ?: run {
                     val imageVersion2 = item.getNullableJSONObject("image_versions2")
                     imageVersion2?.let {
                         val format = formats.copy(imageData = mutableListOf())
