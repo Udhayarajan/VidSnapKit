@@ -1,6 +1,5 @@
 package com.mugames.vidsnapkit.extractor
 
-import android.content.Context
 import android.util.Log
 import com.mugames.vidsnapkit.*
 import com.mugames.vidsnapkit.Util.Companion.decodeHTML
@@ -74,7 +73,7 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         inputUrl = inputUrl.replace("://m.facebook\\.com/".toRegex(), "://www.facebook.com/")
         inputUrl = inputUrl.replace("://www.facebook\\.com/".toRegex(), "://en-gb.facebook.com/")
         triedWithForceEng = true
-        headers["Accept-Language"] = "en-GB,en-US,en"
+        headers["Accept-Language"] = "en-GB, en-US, en"
         scratchWebPage(HttpRequest(inputUrl, headers).getResponse())
     }
 
@@ -89,7 +88,9 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         }
         var videoData: Any? = null
         if (!serverJsData.isNullOrBlank()) {
-            videoData = grabVideoData(JSONObject(serverJsData).getJSONArray("instances"))
+            JSONObject(serverJsData).getNullableJSONArray("instances")?.let {
+                videoData = grabVideoData(it)
+            }
         }
         if (videoData == null) {
             matcher =
@@ -130,7 +131,8 @@ class Facebook internal constructor(url: String) : Extractor(url) {
                 for (regex in regexes) {
                     m = Pattern.compile(regex.toString()).matcher(webPage)
                     if (m.find()) {
-                        formats.imageData.add(ImageResource(resolution = Util.getResolutionFromUrl(m.group(1)!!),
+                        formats.imageData.add(ImageResource(resolution = Util.getResolutionFromUrl(m.group(
+                            1)!!),
                             url = m.group(1)!!))
                         return
                     }
@@ -172,6 +174,21 @@ class Facebook internal constructor(url: String) : Extractor(url) {
         }
     }
 
+    private fun bruteForceJSON(webPage: String, filter: Array<String>): String? {
+        val m =
+            Pattern.compile("<script type=\"application/json\" data-content-len=\"\\d+\" data-sjs>(\\{.+\\})</script>")
+                .matcher(webPage)
+        while (m.find()){
+            val json = m.group(1)
+            for (word in filter){
+                if (json?.contains(word) == true){
+                    return json
+                }
+            }
+        }
+            return null
+    }
+
 
     private fun grabRelayPrefetchedDataSearchUrl(webpage: String): Any? {
         fun parseAttachment(attachment: JSONObject?, key: String) {
@@ -210,7 +227,10 @@ class Facebook internal constructor(url: String) : Extractor(url) {
                     for (j in 0 until attachments.length()) {
                         //attachments.getJSONObject(j).getJSONObject("style_type_renderer").getJSONObject("attachment");
                         val attachment = attachments.getNullableJSONObject(j)
-                            ?.getNullableJSONObject("style_type_renderer")
+                            ?.run {
+                                getNullableJSONObject("style_type_renderer") ?:
+                                getNullableJSONObject("styles")
+                            }
                             ?.getNullableJSONObject("attachment")
 
                         val ns = attachment?.getNullableJSONObject("all_subattachments")
@@ -275,7 +295,7 @@ class Facebook internal constructor(url: String) : Extractor(url) {
     }
 
     private fun grabRelayPrefetchedData(webPage: String, filter: Array<String>): JSONObject? {
-        val jsonString = grabRelayData(webPage, filter)
+        val jsonString = grabRelayData(webPage, filter) ?: bruteForceJSON(webPage, filter)
 
         if (!jsonString.isNullOrBlank()) {
             val require = JSONObject(jsonString).getJSONArray("require")
@@ -367,7 +387,9 @@ class Facebook internal constructor(url: String) : Extractor(url) {
 
     private fun grabFromJSModsInstance(jsData: JSONObject): Any? {
         if (jsData.toString().isNotBlank()) {
-            return grabVideoData(jsData.getJSONObject("jsmods").getJSONArray("instances"))
+            jsData.getNullableJSONObject("jsmods")?.getNullableJSONArray("instances")?.let {
+                return grabVideoData(it)
+            }
         }
         return null
     }
@@ -397,6 +419,10 @@ class Facebook internal constructor(url: String) : Extractor(url) {
             }
         }
         return null
+    }
+
+    public suspend fun testWebpage(string: String){
+        scratchWebPage(string)
     }
 
 
